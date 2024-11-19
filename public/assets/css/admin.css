@@ -1,0 +1,152 @@
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,100..1000;1,9..40,100..1000&display=swap');
+
+:root {
+    --cor-primary: #F5E111;
+    --cor-secondary: #212529;
+}
+
+body {
+    font-family: "DM Sans", sans-serif;
+    display: flex;
+    min-height: 100vh;
+    flex-direction: column;
+    color: #444 !important;
+}
+
+.main-content {
+    flex: 1;
+    display: flex;
+}
+
+.sidebar {
+    width: 250px;
+    background-color: #f8f9fa;
+    padding: 15px;
+}
+
+.content {
+    flex: 1;
+    padding: 20px;
+}
+
+.breadcrumb {
+    font-size: 12px;
+    text-transform: uppercase;
+    font-weight: 500;
+}
+
+.breadcrumb a {
+    text-decoration: none;
+}
+
+.btn {
+    font-size: 14px !important;
+    padding-top: 8px;
+    padding-bottom: 8px;
+}
+
+table .btn {
+    padding-top: 5px;
+    padding-bottom: 5px;
+    font-size: 12px !important;
+}
+
+table tr th {
+    font-size: 13px;
+}
+
+table tr td {
+    font-size: 15px;
+}
+
+table thead tr th {
+    padding-top: 8px !important;
+    padding-bottom: 8px !important;
+    border-bottom-width: 2px !important;
+    border-color: #dee2e6 !important;
+}
+
+table tbody tr:last-child td {
+    border-bottom-width: 2px !important;
+    border-color: #dee2e6 !important;
+}
+
+.titulo-pagina {
+    font-size: 20px;
+}
+
+.titulo-pagina small {
+    font-size: 16px;
+    font-weight: 300;
+    margin-left: 5px;
+    color: #999
+}
+
+.requerido:after {
+    content: '*';
+    color: red;
+}
+
+.error {
+    color: red;
+    font-size: 13px !important;
+    font-weight: bold;
+    padding-top: 3px;
+}
+
+.nav-header {
+    text-transform: uppercase;
+    font-weight: 700 !important;
+    font-size: 13px;
+    margin-top: 15px;
+    margin-bottom: 5px;
+}
+
+.nav-item {
+    font-size: 14px;
+}
+
+.nav-item .nav-link {
+    padding: .15rem 1rem;
+    color: rgba(0, 0, 0, 0.5);
+    font-weight: 600;
+}
+.nav-item .nav-link:hover,
+.nav-item .nav-link.active {
+    color: rgba(0, 0, 0, 1);
+}
+
+table tr td {
+    vertical-align: middle;
+}
+
+ul.lista-item {
+    margin-left: 65px !important;
+    list-style: none;
+    padding: 0;
+}
+
+ul.lista-item li {
+    margin-bottom: 3px;
+}
+
+ul.lista-item li span {
+    display: inline-block;
+    width: 200px;
+    text-align: right;
+    margin-right: 5px;
+}
+
+.col-form-label {
+    font-size: 15px;
+}
+a.btn-table,
+button.btn-table{
+    border: none;
+    padding: 0;
+    font-size: 16px!important;
+    margin-right: 6px;
+}
+.btn-table:last-child{
+    margin-right: 0;
+}

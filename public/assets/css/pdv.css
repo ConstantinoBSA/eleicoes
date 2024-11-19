@@ -1,0 +1,44 @@
+body {
+    background-color: #f4f4f9;
+}
+.header {
+    background: #343a40;
+    padding: 10px;
+    color: white;
+    text-align: center;
+}
+.container {
+    margin-top: 20px;
+}
+.product-list {
+    max-height: 300px;
+    overflow-y: auto;
+}
+.total {
+    font-size: 1.5em;
+    font-weight: bold;
+    color: #28a745;
+}
+.btn-finalizar {
+    width: 100%;
+    font-size: 1.2em;
+}
+.search-results {
+    list-style: none;
+    padding: 0;
+    max-height: 200px;
+    overflow-y: auto;
+    border: 1px solid #ccc;
+    background: #fff;
+    position: absolute;
+    width: 100%;
+    z-index: 1000;
+}
+.search-results li {
+    padding: 5px;
+    border-bottom: 1px solid #ddd;
+    cursor: pointer;
+}
+.search-results li:hover {
+    background-color: #f0f0f0;
+}
