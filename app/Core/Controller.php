@@ -8,6 +8,7 @@ class Controller
     protected $validator;
     protected $auditLogger;
     protected $request;
+    protected $redirect;
     protected $instances = [];
 
     public function __construct()
@@ -16,6 +17,7 @@ class Controller
         $this->validator = new Validator();
         $this->auditLogger = new AuditLogger();
         $this->request = new Request();
+        $this->redirect = new Redirect();
     }
 
     public function view($view, $data = [])
@@ -32,8 +34,38 @@ class Controller
 
     protected function redirect($location)
     {
-        header('Location: ' . $location);
+        // Extrai a URI atual completa
+        $currentUri = $this->getPreviousRoute();
+
+        // Determina a posição do '?' na URL
+        $queryStringStart = strpos($currentUri, '?');
+
+        // Se existir uma query string, extraí-la
+        if ($queryStringStart !== false) {
+            // Obtém a query string completa a partir do '?'
+            $queryString = substr($currentUri, $queryStringStart);
+        } else {
+            // Se não houver uma query string, define-a como vazia
+            $queryString = '';
+        }
+
+        // Monta a URL completa combinando o destino com a query string atual
+        $url = $location . $queryString;
+
+        // Executa o redirecionamento
+        header('Location: ' . $url);
         exit();
+    }
+
+    protected function getPreviousRoute()
+    {
+        // Verifica se o cabeçalho HTTP_REFERER está definido
+        if (isset($_SERVER['HTTP_REFERER'])) {
+            return $_SERVER['HTTP_REFERER'];
+        } else {
+            // Retorna null ou uma string padrão se o referer não estiver definido
+            return null; // ou uma URL padrão
+        }
     }
 
     protected function redirectToWithMessage($location, $message, $type)

@@ -128,18 +128,22 @@ class Sanitizer
      * @param array $array O array de strings a ser sanitizado.
      * @return array O array sanitizado.
      */
-    public function sanitizeArray(array $array)
+    public function sanitizeArray(?array $array)
     {
-        return array_map(function($item) {
-            if (is_string($item)) {
-                return $this->sanitizeString($item);
-            } elseif (is_int($item)) {
-                return $this->sanitizeInt($item);
-            } elseif (is_float($item)) {
-                return $this->sanitizeFloat($item);
-            }
-            // Retorna o item sem alteração se não for um tipo que exigimos sanitizar
-            return $item;
-        }, $array);
+        if(is_array($array)){
+            return array_map(function($item) {
+                if (is_string($item)) {
+                    return $this->sanitizeString($item);
+                } elseif (is_int($item)) {
+                    return $this->sanitizeInt($item);
+                } elseif (is_float($item)) {
+                    return $this->sanitizeFloat($item);
+                }
+                // Retorna o item sem alteração se não for um tipo que exigimos sanitizar
+                return $item;
+            }, $array);
+        }else{
+            $this->sanitizeString($array);
+        }
     }
 }

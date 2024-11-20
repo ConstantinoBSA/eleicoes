@@ -11,8 +11,10 @@ class Model
     protected $tableName;
     protected $query;
     protected $bindings = [];
+    protected $primaryKey = 'id';
     protected $selectColumns = '*';
     protected $fillable = [];
+    protected $attributes = [];
 
     public function __construct()
     {
@@ -20,17 +22,41 @@ class Model
         $this->resetQuery();
     }
 
+    public function table($tableName)
+    {
+        if (!is_string($tableName) || empty($tableName)) {
+            throw new InvalidArgumentException("O nome da tabela deve ser uma string não vazia.");
+        }
+        $this->tableName = $tableName;
+        return $this; // Permite o encadeamento de métodos
+    }
+
     public function getTableName()
     {
+        if (empty($this->tableName)) {
+            throw new \Exception("Nome da tabela não foi definido.");
+        }
         return $this->tableName;
+    }
+
+     /**
+     * Define a chave primária para o modelo.
+     */
+    public function setPrimaryKey($key)
+    {
+        if (!is_string($key) || empty($key)) {
+            throw new InvalidArgumentException("A chave primária deve ser uma string não vazia.");
+        }
+        $this->primaryKey = $key;
+        return $this;
     }
 
     public function fill(array $attributes)
     {
-        $filteredAttributes = array_intersect_key($attributes, array_flip($this->fillable));
-
-        foreach ($filteredAttributes as $key => $value) {
-            $this->$key = $value;
+        foreach ($attributes as $key => $value) {
+            if (in_array($key, $this->fillable) || $key === $this->primaryKey) {
+                $this->$key = $value;
+            }
         }
     }
 
@@ -237,6 +263,12 @@ class Model
         if ($query === null) {
             $query = $this->query;
         }
+
+        // Verificação adicional para evitar consultas vazias
+        if (empty(trim($query))) {
+            throw new \Exception("A query SQL está vazia. Certifique-se de construir a query antes de executá-la.");
+        }
+
         $stmt = $this->pdo->prepare($query);
         $stmt->execute($this->bindings);
         return $stmt;
@@ -298,7 +330,8 @@ class Model
     public function belongsToMany($relatedClass, $pivotTable, $foreignKey, $relatedKey, $localKey, $relatedLocalKey)
     {
         $instance = new $relatedClass($this->pdo);
-        $query = "SELECT {$instance->getTableName()}.* FROM {$instance->getTableName()}
+        $query = "SELECT {$instance->getTableName()}.*, {$pivotTable}.*
+                  FROM {$instance->getTableName()}
                   JOIN {$pivotTable} ON {$instance->getTableName()}.{$relatedLocalKey} = {$pivotTable}.{$relatedKey}
                   WHERE {$pivotTable}.{$foreignKey} = ?";
         $stmt = $this->pdo->prepare($query);
@@ -307,9 +340,21 @@ class Model
 
         $objects = [];
         foreach ($results as $result) {
-            $object = new $relatedClass();
-            $object->fillFromDatabase($result);
-            $objects[] = $object;
+            $relatedObject = new $relatedClass($this->pdo);
+            $relatedObject->fillFromDatabase($result);
+
+            $pivotData = [];
+            foreach ($result as $key => $value) {
+                if (strpos($key, $pivotTable . '_') === 0) {
+                    $pivotData[substr($key, strlen($pivotTable) + 1)] = $value;
+                }
+            }
+
+            if (method_exists($relatedObject, 'setPivot')) {
+                $relatedObject->setPivot(new PivotContainer($pivotData));
+            }
+
+            $objects[] = $relatedObject;
         }
 
         return $objects;
@@ -354,7 +399,7 @@ class Model
      */
     public function find($id)
     {
-        $stmt = $this->pdo->prepare("SELECT * FROM {$this->tableName} WHERE id = :id");
+        $stmt = $this->pdo->prepare("SELECT * FROM {$this->tableName} WHERE {$this->primaryKey} = :id");
         $stmt->execute(['id' => $id]);
         $result = $stmt->fetch(PDO::FETCH_ASSOC);
 
@@ -372,15 +417,56 @@ class Model
      */
     public function create(array $data)
     {
+        if (!$this->tableName) {
+            throw new \Exception("No table specified for the operation.");
+        }
+
+        // Sempre inclua o primaryKey no fillable
+        $this->fillable[] = $this->primaryKey;
+        $this->fillable = array_unique($this->fillable);
+
+        // Atualizar $fillable com as chaves de $data, caso ainda não estejam
+        $this->fillable = array_unique(array_merge($this->fillable, array_keys($data)));
+
+        // Filtrar apenas as colunas que são preenchíveis
         $filteredData = array_intersect_key($data, array_flip($this->fillable));
 
+        // Criar string de colunas e placeholders para a consulta SQL
         $columns = implode(', ', array_keys($filteredData));
         $placeholders = ':' . implode(', :', array_keys($filteredData));
 
+        // Preparar a instrução SQL
         $sql = "INSERT INTO {$this->tableName} ($columns) VALUES ($placeholders)";
         $stmt = $this->pdo->prepare($sql);
 
-        return $stmt->execute($filteredData);
+        // Executar a instrução SQL
+        $success = $stmt->execute($filteredData);
+
+        if ($success) {
+            // Obter o último ID inserido
+            $lastInsertId = $this->pdo->lastInsertId();
+
+            // Se o primaryKey não for 'id', não podemos garantir que lastInsertId seja correto
+            if ($this->primaryKey == 'id') {
+                $stmt = $this->pdo->prepare("SELECT * FROM {$this->tableName} WHERE {$this->primaryKey} = :id");
+                $stmt->execute(['id' => $lastInsertId]);
+                $result = $stmt->fetch(PDO::FETCH_ASSOC);
+
+                if ($result) {
+                    $object = new static();
+                    $object->fillFromDatabase($result);
+                    return $object;
+                }
+            } else {
+                // Para outras chaves primárias, apenas preencha o objeto com os dados inseridos
+                $object = new static();
+                $object->fill($filteredData);
+                return $object;
+            }
+        }
+
+        // Retornar false se a inserção falhar
+        return false;
     }
 
     /**
@@ -420,11 +506,27 @@ class Model
         }
     }
 
-    private function fillFromDatabase($dataArray)
-    {       
+    public function __set($key, $value)
+    {
+        if (in_array($key, $this->fillable) || $key === $this->primaryKey) {
+            $this->attributes[$key] = $value;
+        } else {
+            throw new \Exception("The attribute '{$key}' is not fillable.");
+        }
+    }
+
+    public function __get($key)
+    {
+        return $this->attributes[$key] ?? null;
+    }
+
+    protected function fillFromDatabase(array $dataArray)
+    {
         foreach ($dataArray as $key => $value) {
-            if (in_array($key, $this->fillable)) {
+            if (in_array($key, $this->fillable) || $key === $this->primaryKey) {
                 $this->$key = $value;
+            } else {
+                $this->attributes[$key] = $value;
             }
         }
     }

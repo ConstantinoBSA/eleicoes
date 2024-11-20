@@ -3,6 +3,7 @@
 namespace App\Core;
 
 class Validator {
+    protected array $data = []; 
     protected $errors = [];
     protected $pdo;
 
@@ -10,26 +11,50 @@ class Validator {
         $this->pdo = Database::getInstance()->getConnection();
     }
 
-    public function validate($data, $rules) {
+    public function validate(array $data, array $rules): array {
+        $this->data = $data; // Inicializa a propriedade com os dados de entrada
+        $this->errors = []; // Assegura que os erros estão vazios
+        
+
         foreach ($rules as $field => $ruleSet) {
             $rulesArray = explode('|', $ruleSet);
-            foreach ($rulesArray as $rule) {
-                $parameters = [];
-                if (strpos($rule, ':') !== false) {
-                    list($rule, $paramString) = explode(':', $rule);
-                    $parameters = explode(',', $paramString);
+            $value = $this->data[$field] ?? null;
+
+            if (is_array($value)) {
+                foreach ($value as $index => $item) {
+                    $this->applyRules($field, $item, $rulesArray, $index);
                 }
-                $method = 'validate' . ucfirst($rule);
-                if (method_exists($this, $method)) {
-                    $this->$method($field, $data[$field] ?? null, $parameters);
-                }
+            } else {
+                $this->applyRules($field, $value, $rulesArray);
             }
         }
         return $this->errors;
     }
 
+    protected function applyRules(string $field, $value, array $rulesArray, $index = null): void {
+        foreach ($rulesArray as $rule) {
+            $parameters = [];
+            if (strpos($rule, ':') !== false) {
+                list($rule, $parameterString) = explode(':', $rule);
+                $parameters = explode(',', $parameterString);
+            }
+
+            $methodName = 'validate' . ucfirst($rule);
+            if (method_exists($this, $methodName)) {
+                if ($index !== null) {
+                    $fieldWithIndex = "{$field}.{$index}";
+                    $this->$methodName($fieldWithIndex, $value, $parameters);
+                } else {
+                    $this->$methodName($field, $value, $parameters);
+                }
+            } else {
+                $this->errors[$field][] = "Método de validação '{$rule}' não encontrado.";
+            }
+        }
+    }
+
     protected function validateRequired($field, $value) {
-        if (empty($value) && $value == null) {
+        if (empty($value)) {
             $this->errors[$field] = 'O campo ' . $field . ' é obrigatório.';
         }
     }
@@ -70,6 +95,60 @@ class Validator {
         }
     }
 
+    protected function validateUniqueCombination($field, $value, $parameters) {
+        if (count($parameters) < 2) {
+            $this->errors[$field] = 'Erro de validação: parâmetros insuficientes para a validação de combinação única.';
+            return;
+        }
+    
+        $table = array_shift($parameters);
+        $excludeId = isset($parameters[count($parameters) - 2]) ? end($parameters) : null;
+        if (is_numeric($excludeId)) {
+            array_pop($parameters);
+        } else {
+            $excludeId = null;
+        }
+    
+        $conditions = ["$field = :$field"];
+        $bindings = [":$field" => $value];
+    
+        // Iterar sobre os pares campo-valor adicionais
+        foreach (array_chunk($parameters, 2) as $pair) {
+            if (count($pair) == 2) {
+                list($otherColumn, $otherFieldName) = $pair;
+                if (isset($this->data[$otherFieldName])) {
+                    $conditions[] = "$otherColumn = :$otherColumn";
+                    $bindings[":$otherColumn"] = $this->data[$otherColumn];
+                } else {
+                    $this->errors[$field] = "O campo '$otherFieldName' não está presente nos dados.";
+                    return;
+                }
+            }
+        }
+    
+        if ($excludeId) {
+            $conditions[] = "id != :excludeId";
+            $bindings[':excludeId'] = $excludeId;
+        }
+    
+        $sql = "SELECT COUNT(*) FROM $table WHERE " . implode(' AND ', $conditions);
+    
+        if ($this->pdo) {
+            $stmt = $this->pdo->prepare($sql);
+            foreach ($bindings as $param => $val) {
+                $stmt->bindValue($param, $val);
+            }
+            $stmt->execute();
+            $count = $stmt->fetchColumn();
+    
+            if ($count > 0) {
+                $this->errors[$field] = 'A combinação dos valores para ' . $field . ' e campos associados já está em uso.';
+            }
+        } else {
+            $this->errors[$field] = 'Erro de validação: conexão com o banco de dados não configurada.';
+        }
+    }
+
     protected function validateMin($field, $value, $parameters) {
         $min = $parameters[0];
         if (strlen($value) < $min) {
@@ -87,6 +166,12 @@ class Validator {
     protected function validateNumeric($field, $value) {
         if (!is_numeric($value)) {
             $this->errors[$field] = 'O campo ' . $field . ' deve ser numérico.';
+        }
+    }
+
+    protected function validateArray($field, $value) {
+        if (!is_array($value)) {
+            $this->errors[$field] = 'O campo ' . $field . ' deve ser um array.';
         }
     }
 }

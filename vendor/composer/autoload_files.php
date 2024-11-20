@@ -9,7 +9,7 @@ return array(
     '320cde22f66dd4f5d3fd621d3e88b98f' => $vendorDir . '/symfony/polyfill-ctype/bootstrap.php',
     '0e6d7bf4a5811bfa5cf40c5ccd6fae6a' => $vendorDir . '/symfony/polyfill-mbstring/bootstrap.php',
     'a4a119a56e50fbb293281d9a48007e0e' => $vendorDir . '/symfony/polyfill-php80/bootstrap.php',
-    'e348e8e2f31c5bc77977e681cff2f524' => $baseDir . '/app/Support/blade.php',
-    'f5798aaaf700dce7f9f17d0ece1af08d' => $baseDir . '/app/Support/functions.php',
-    'e90059e556eb526ed31a7db7900e1598' => $baseDir . '/app/Support/help.php',
+    'aeb60af8fc61b662fe910e15d9d8f881' => $baseDir . '/app/Support/blade.php',
+    '3faee3411fef0ba377feb393ff857577' => $baseDir . '/app/Support/functions.php',
+    'a644c1730004617a74b1f8f5e96c1226' => $baseDir . '/app/Support/help.php',
 );

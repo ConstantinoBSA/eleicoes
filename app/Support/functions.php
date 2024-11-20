@@ -121,15 +121,57 @@ function csrf()
     }
 }
 
-function gerarCodigoSeguranca() {
-    return bin2hex(random_bytes(16));  // Gera um código de 32 caracteres hexadecimais
+function gerarCodigoSeguranca($escolaId, $tipo)
+{
+    $pdo = Database::getInstance()->getConnection();
+
+    // Obter o nome da escola
+    $sql = "SELECT sigla FROM escolas WHERE id = :escola_id";
+    $stmt = $pdo->prepare($sql);
+    $stmt->execute([':escola_id' => $escolaId]);
+    $escola = $stmt->fetch();
+
+    // Gerar a sigla da escola
+    $siglaEscola = strtoupper($escola['sigla']);
+
+    // Obter o último número sequencial usado para esta escola
+    $sql = "SELECT codigo_seguranca FROM cedulas WHERE escola_id = :escola_id ORDER BY id DESC LIMIT 1";
+    $stmt = $pdo->prepare($sql);
+    $stmt->execute([':escola_id' => $escolaId]);
+    $ultimaCedula = $stmt->fetch();
+
+    // Extrair o número sequencial do último código de segurança
+    $numeroSequencial = 1; // Padrão se não houver cédulas anteriores
+    if ($ultimaCedula) {
+        preg_match('/\d{4}/', $ultimaCedula['codigo_seguranca'], $matches);
+        if ($matches) {
+            $numeroSequencial = intval($matches[0]) + 1; // Incrementar o número
+        }
+    }
+
+    // Formatar o número sequencial para quatro dígitos
+    $numeroSequencialFormatado = str_pad($numeroSequencial, 4, '0', STR_PAD_LEFT);
+
+    // Determinar a letra do tipo de cédula
+    $letraTipo = ($tipo == 'branca') ? 'B' : 'A';
+
+    // Construir o código de segurança
+    return $siglaEscola . $numeroSequencialFormatado . $letraTipo;
 }
 
-function gerarCedulasParaEscola($escolaId, $quantidade) {
-    $pdo = Database::getInstance()->getConnection();
-    $stmt = $pdo->prepare("INSERT INTO cedulas (codigo_seguranca, escola_id) VALUES (:codigo, :escola_id)");
-    for ($i = 0; $i < $quantidade; $i++) {
-        $codigoSeguranca = gerarCodigoSeguranca();
-        $stmt->execute(['codigo' => $codigoSeguranca, 'escola_id' => $escolaId]);
-    }
+function old($key, $default = null) {
+    // Verificar se o valor antigo está na sessão
+    $value = isset($_SESSION['old'][$key]) ? $_SESSION['old'][$key] : $default;
+    
+    // Sanitizar o valor para uso seguro no HTML
+    return $value;
+}
+
+// Exemplo de uso após o processamento do formulário para armazenar valores antigos
+function storeOldInput($data) {
+    $_SESSION['old'] = $data;
+}
+
+function clearOldInput() {
+    unset($_SESSION['old']);
 }

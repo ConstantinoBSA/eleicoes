@@ -36,7 +36,7 @@ if (empty($_SESSION['csrf_token'])) {
         <div class="col-sm-7">
             <input type="text" class="form-control" id="nome" name="nome" value="<?php echo htmlspecialchars($usuario->nome ?? ''); ?>">
             <?php if (!empty($errors['nome'])): ?>
-                <p class="error"><?php echo htmlspecialchars($errors['nome']); ?></p>
+                <p class="error mb-0"><?php echo htmlspecialchars($errors['nome']); ?></p>
             <?php endif; ?>
         </div>
     </div>
@@ -46,7 +46,7 @@ if (empty($_SESSION['csrf_token'])) {
         <div class="col-sm-7">
             <input type="text" class="form-control" id="label" name="label" value="<?php echo htmlspecialchars($usuario->label ?? ''); ?>">
             <?php if (!empty($errors['label'])): ?>
-                <p class="error"><?php echo htmlspecialchars($errors['label']); ?></p>
+                <p class="error mb-0"><?php echo htmlspecialchars($errors['label']); ?></p>
             <?php endif; ?>
         </div>
     </div>
@@ -56,7 +56,7 @@ if (empty($_SESSION['csrf_token'])) {
         <div class="col-sm-7">
             <input type="text" class="form-control" id="descricao" name="descricao" value="<?php echo htmlspecialchars($usuario->descricao ?? ''); ?>">
             <?php if (!empty($errors['descricao'])): ?>
-                <p class="error"><?php echo htmlspecialchars($errors['descricao']); ?></p>
+                <p class="error mb-0"><?php echo htmlspecialchars($errors['descricao']); ?></p>
             <?php endif; ?>
         </div>
     </div>

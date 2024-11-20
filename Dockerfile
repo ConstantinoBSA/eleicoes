@@ -1,6 +1,6 @@
 # Use a imagem base do PHP com Apache
 FROM ubuntu:22.04
-FROM php:8.1-apache
+FROM php:8.2-apache
 
 WORKDIR /var/www/html
 

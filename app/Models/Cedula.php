@@ -6,42 +6,37 @@ use App\Core\Model;
 
 class Cedula extends Model
 {
-    public function __construct()
+    protected $tableName = 'cedulas';
+    protected $fillable = [
+        'id',
+        'codigo_seguranca',
+        'escola_id',
+        'eleitor_id',
+        'usado',
+        'tipo',
+        'data_emissao',
+        'created_at',
+        'updated_at'
+    ];
+
+    public function escola()
     {
-        parent::__construct();
+        return $this->belongsTo(Escola::class, 'escola_id', 'id');
     }
-
-    public function gerarEExibirCedulas($escolaId) 
+    
+    public function mostrarCedulas()
     {
-        // Obtém o total de eleitores para a escola
-        $stmt = $this->pdo->prepare("SELECT COUNT(id) FROM eleitores WHERE escola_id = :escola_id");
-        $stmt->execute(['escola_id' => $escolaId]);
-        $numeroDeEleitores = $stmt->fetchColumn();
+        // Busca as cédulas associadas a uma escola e conta o total por escola
+        $stmt = $this->pdo->prepare("
+            SELECT escolas.id AS escola_id, escolas.nome AS escola_nome, 
+                COUNT(cedulas.id) AS total_cedulas
+            FROM cedulas
+            JOIN escolas ON cedulas.escola_id = escolas.id
+            GROUP BY escolas.id, escolas.nome
+        ");
+        $stmt->execute();
+        $cedulasPorEscola = $stmt->fetchAll(\PDO::FETCH_ASSOC);
 
-        if ($numeroDeEleitores > 0) {
-            // Gera cédulas correspondentes ao número de eleitores
-            $stmtInsert = $this->pdo->prepare("INSERT INTO cedulas (codigo_seguranca, escola_id) VALUES (:codigo, :escola_id)");
-            $stmtSelect = $this->pdo->prepare("SELECT codigo_seguranca FROM cedulas WHERE escola_id = :escola_id");
-
-            // Geração e inserção das cédulas
-            for ($i = 0; $i < $numeroDeEleitores; $i++) {
-                $codigoSeguranca = gerarCodigoSeguranca();
-                $stmtInsert->execute(['codigo' => $codigoSeguranca, 'escola_id' => $escolaId]);
-            }
-
-            // Seleciona todas as cédulas geradas para exibição
-            $stmtSelect->execute(['escola_id' => $escolaId]);
-            $cedulas = $stmtSelect->fetchAll(PDO::FETCH_ASSOC);
-
-            echo "<h4>Cédulas Geradas para a Escola ID: $escolaId</h4>";
-            echo "<p>Total de cédulas: " . count($cedulas) . "</p>";
-            echo "<ul>";
-            foreach ($cedulas as $cedula) {
-                echo "<li>Código de Segurança: " . htmlspecialchars($cedula['codigo_seguranca'], ENT_QUOTES, 'UTF-8') . "</li>";
-            }
-            echo "</ul>";
-        } else {
-            echo "<p>Nenhum eleitor registrado para a escola ID: $escolaId.</p>";
-        }
+        return $cedulasPorEscola;
     }
 }

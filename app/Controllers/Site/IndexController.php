@@ -3,7 +3,9 @@
 namespace App\Controllers\Site;
 
 use App\Core\Controller;
+use App\Models\Cedula;
 use App\Models\Dashboard;
+use App\Models\Resultado;
 
 class IndexController extends Controller
 {
@@ -28,8 +30,24 @@ class IndexController extends Controller
 
     public function cedulas()
     {
+        $cedulaModel = new Cedula();
+        $cedulaModel->gerarEExibirCedulas(1);
+
+        $cedulas = $cedulaModel->mostrarCedulas(1);
+        
         $this->view('site/cedulas', [
-            //
+            'cedulas' => $cedulas['cedulas'],
+            'chapas' => $cedulas['chapas'],
+        ]);
+    }
+
+    public function resultados()
+    {
+        $resultadoModel = new Resultado();
+        $resultados = $resultadoModel->gerarResultados();
+        
+        $this->view('site/resultados', [
+            'resultados' => $resultados
         ]);
     }
 }

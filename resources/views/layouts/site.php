@@ -25,6 +25,29 @@ function isActive($linkPattern, $currentPath)
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css"/>
     <!-- Toastr CSS -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.css">
+    <style>
+        .chapa-checkbox {
+            transform: scale(1.5);
+            margin-right: 10px;
+        }
+        .candidate-photo {
+            width: 100px; /* Ajuste o tamanho conforme necessário */
+            height: 100px;
+            object-fit: cover;
+            border-radius: 50%;
+        }
+        .chapa-container {
+            margin-bottom: 20px;
+            padding: 20px;
+            border: 1px solid #ccc;
+            border-radius: 10px;
+            background-color: #f8f9fa;
+        }
+        .area-candidato{
+            display: flex;
+            gap: 10px;
+        }
+    </style>
 </head>
 <body>
     <?= yieldSection('content') ?>

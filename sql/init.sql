@@ -12,9 +12,12 @@ DROP TABLE IF EXISTS configuracoes;
 DROP TABLE IF EXISTS eleitores;
 DROP TABLE IF EXISTS escola_segmentos;
 DROP TABLE IF EXISTS segmentos;
+DROP TABLE IF EXISTS resultados;
+DROP TABLE IF EXISTS chapa_candidatos;
+DROP TABLE IF EXISTS chapas;
 DROP TABLE IF EXISTS candidatos;
-DROP TABLE IF EXISTS escolas;
 DROP TABLE IF EXISTS cedulas;
+DROP TABLE IF EXISTS escolas;
 
 CREATE TABLE usuarios (
     id INT AUTO_INCREMENT PRIMARY KEY,
@@ -123,13 +126,20 @@ CREATE TABLE configuracoes (
 
 CREATE TABLE segmentos (
     id INT AUTO_INCREMENT PRIMARY KEY,
-    nome VARCHAR(50) NOT NULL UNIQUE
+    nome VARCHAR(50) NOT NULL UNIQUE,
+    status BOOLEAN NOT NULL DEFAULT TRUE,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 );
 
 CREATE TABLE escolas (
     id INT AUTO_INCREMENT PRIMARY KEY,
     nome VARCHAR(100) NOT NULL,
-    endereco VARCHAR(255)
+    sigla VARCHAR(3) NOT NULL,
+    endereco VARCHAR(255),
+    status BOOLEAN NOT NULL DEFAULT TRUE,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 );
 
 CREATE TABLE escola_segmentos (
@@ -143,9 +153,10 @@ CREATE TABLE escola_segmentos (
 CREATE TABLE candidatos (
     id INT AUTO_INCREMENT PRIMARY KEY,
     nome VARCHAR(100) NOT NULL,
-    cargo VARCHAR(50) NOT NULL,
-    chapa VARCHAR(50) NOT NULL,
     escola_id INT,
+    status BOOLEAN NOT NULL DEFAULT TRUE,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     FOREIGN KEY (escola_id) REFERENCES escolas(id)
 );
 
@@ -156,6 +167,9 @@ CREATE TABLE eleitores (
     documento VARCHAR(20) NOT NULL UNIQUE,
     registrado BOOLEAN DEFAULT FALSE,
     escola_id INT,
+    status BOOLEAN NOT NULL DEFAULT TRUE,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     FOREIGN KEY (escola_id) REFERENCES escolas(id),
     FOREIGN KEY (segmento_id) REFERENCES segmentos(id)
 );
@@ -164,10 +178,37 @@ CREATE TABLE cedulas (
     id INT AUTO_INCREMENT PRIMARY KEY,
     codigo_seguranca VARCHAR(100) NOT NULL UNIQUE,
     escola_id INT NOT NULL,
-    eleitor_id INT NULL,  -- pode ser NULL até que um eleitor específico use esta cédula
+    eleitor_id INT NULL,
+    tipo ENUM('branca', 'amarela') NOT NULL,
     usado BOOLEAN DEFAULT FALSE,
     data_emissao TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (escola_id) REFERENCES escolas(id)
+);
+
+CREATE TABLE chapas (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    nome VARCHAR(100) NOT NULL,    
+    escola_id INT,
+    status BOOLEAN NOT NULL DEFAULT TRUE,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (escola_id) REFERENCES escolas(id)
+);
+
+CREATE TABLE chapa_candidatos (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    cargo VARCHAR(50) NOT NULL,
+    chapa_id INT,
+    candidato_id INT,
+    FOREIGN KEY (chapa_id) REFERENCES chapas(id),
+    FOREIGN KEY (candidato_id) REFERENCES candidatos(id)
+);
+
+CREATE TABLE resultados (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    chapa_id INT NOT NULL,
+    votos INT NOT NULL,
+    FOREIGN KEY (chapa_id) REFERENCES chapas(id)
 );
 
 INSERT INTO usuarios (name, email, email_verified_at, password, status) VALUES 
@@ -230,48 +271,51 @@ INSERT INTO segmentos (nome) VALUES
 ('servidor'),
 ('responsavel');
 
-INSERT INTO escolas (nome, endereco) VALUES 
-('Escola Municipal João XXIII', 'Rua das Flores, 123, Centro'), 
-('Escola Estadual Pedro Álvares Cabral', 'Av. Central, 456, Bairro Novo'), 
-('Escola Municipal Maria da Penha', 'Rua da Esperança, 789, Vila Velha'),
-('Escola Estadual Tiradentes', 'Rua da Liberdade, 234, Nova Vila'),
-('Escola Municipal Antonio Prado', 'Av. das Nações, 321, Centro Histórico');
+INSERT INTO escolas (nome, sigla, endereco) VALUES 
+('Escola Municipal João XXIII', 'EMJ', 'Rua das Flores, 123, Centro'), 
+('Escola Estadual Pedro Álvares Cabral', 'EPA', 'Av. Central, 456, Bairro Novo'), 
+('Escola Municipal Maria da Penha', 'EMP', 'Rua da Esperança, 789, Vila Velha'),
+('Escola Estadual Tiradentes', 'EET', 'Rua da Liberdade, 234, Nova Vila'),
+('Escola Municipal Antonio Prado', 'EAP', 'Av. das Nações, 321, Centro Histórico');
 
+-- Expansão para outras escolas (exemplo)
 INSERT INTO escola_segmentos (escola_id, segmento_id) VALUES
-(1, 1), -- aluno
-(1, 2), -- professor
-(1, 3); -- servidor
+(3, 1), -- aluno
+(3, 2), -- professor
+(3, 3), -- servidor
+(4, 1), -- aluno
+(4, 2), -- professor
+(4, 3), -- servidor
+(5, 1), -- aluno
+(5, 2), -- professor
+(5, 3); -- servidor
 
-INSERT INTO escola_segmentos (escola_id, segmento_id) VALUES
-(2, 2), -- professor
-(2, 3); -- servidor
-
-INSERT INTO candidatos (nome, cargo, chapa, escola_id) VALUES 
+INSERT INTO candidatos (nome, escola_id) VALUES 
 -- Escola 1
-('Ana Silva', 'Diretor', 'Chapa 1', 1),
-('Helena Costa', 'Diretor Adjunto', 'Chapa 1', 1),
-('Marcos Lima', 'Diretor', 'Chapa 2', 1),
-('Carla Nunes', 'Diretor Adjunto', 'Chapa 2', 1),
+('Ana Silva', 1),
+('Helena Costa', 1),
+('Marcos Lima', 1),
+('Carla Nunes', 1),
 -- Escola 2
-('Carlos Souza', 'Diretor', 'Chapa 1', 2),
-('Fernanda Luz', 'Diretor Adjunto', 'Chapa 1', 2),
-('Rodrigo Mendes', 'Diretor', 'Chapa 2', 2),
-('Bianca Oliveira', 'Diretor Adjunto', 'Chapa 2', 2),
+('Carlos Souza', 2),
+('Fernanda Luz', 2),
+('Rodrigo Mendes', 2),
+('Bianca Oliveira', 2),
 -- Escola 3
-('José Lima', 'Diretor', 'Chapa 1', 3),
-('Patrícia Almeida', 'Diretor Adjunto', 'Chapa 1', 3),
-('Lucas Moraes', 'Diretor', 'Chapa 2', 3),
-('Juliana Souza', 'Diretor Adjunto', 'Chapa 2', 3),
+('José Lima', 3),
+('Patrícia Almeida', 3),
+('Lucas Moraes', 3),
+('Juliana Souza', 3),
 -- Escola 4
-('Rafael Costa', 'Diretor', 'Chapa 1', 4),
-('Luciana Reis', 'Diretor Adjunto', 'Chapa 1', 4),
-('André Santos', 'Diretor', 'Chapa 2', 4),
-('Simone Duarte', 'Diretor Adjunto', 'Chapa 2', 4),
+('Rafael Costa', 4),
+('Luciana Reis', 4),
+('André Santos', 4),
+('Simone Duarte', 4),
 -- Escola 5
-('Gabriel Pena', 'Diretor', 'Chapa 1', 5),
-('Renata Lima', 'Diretor Adjunto', 'Chapa 1', 5),
-('Felipe Araújo', 'Diretor', 'Chapa 2', 5),
-('Carolina Martins', 'Diretor Adjunto', 'Chapa 2', 5);
+('Gabriel Pena', 5),
+('Renata Lima', 5),
+('Felipe Araújo', 5),
+('Carolina Martins', 5);
 
 -- Escola 1
 INSERT INTO eleitores (nome, segmento_id, documento, registrado, escola_id) VALUES
@@ -280,7 +324,6 @@ INSERT INTO eleitores (nome, segmento_id, documento, registrado, escola_id) VALU
 ('Pedro Fernandes', 3, '11122233301', TRUE, 1),
 ('Ana Paula', 1, '44455566601', TRUE, 1),
 ('Lucas Martins', 2, '77788899901', TRUE, 1);
--- Continue adicionando registros até atingir entre 30 a 50 registros para Escola 1
 
 -- Escola 2
 INSERT INTO eleitores (nome, segmento_id, documento, registrado, escola_id) VALUES
@@ -289,3 +332,29 @@ INSERT INTO eleitores (nome, segmento_id, documento, registrado, escola_id) VALU
 ('Bruno Lima', 3, '11122233302', TRUE, 2),
 ('Fernanda Dias', 1, '44455566602', TRUE, 2),
 ('Rafael Nunes', 2, '77788899902', TRUE, 2);
+
+INSERT INTO chapas (nome, escola_id) VALUES
+('Chapa 1', 1),
+('Chapa 2', 1),
+('Chapa 1', 2),
+('Chapa 2', 2),
+('Chapa 1', 3),
+('Chapa 2', 3),
+('Chapa 1', 4),
+('Chapa 2', 4),
+('Chapa 1', 5),
+('Chapa 2', 5);
+
+INSERT INTO chapa_candidatos (cargo, chapa_id, candidato_id) VALUES
+-- Exemplo para Escola 1
+('Diretor', 1, 1),
+('Diretor Adjunto', 1, 2),
+('Diretor', 2, 3),
+('Diretor Adjunto', 2, 4);
+
+INSERT INTO resultados (chapa_id, votos) VALUES
+(1, 0), -- Chapa 1, Escola 1
+(2, 0), -- Chapa 2, Escola 1
+(3, 0), -- Chapa 1, Escola 2
+(4, 0); -- Chapa 2, Escola 2
+

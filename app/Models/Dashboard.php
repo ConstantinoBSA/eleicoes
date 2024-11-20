@@ -14,23 +14,25 @@ class Dashboard extends Model
     public function escolas() 
     {
         $sql = "
-            SELECT e.nome AS escola_nome, c.nome AS candidato_nome, c.cargo, c.chapa 
-            FROM candidatos c
-            JOIN escolas e ON c.escola_id = e.id
-            ORDER BY e.id, c.chapa
+            SELECT e.nome AS escola_nome, ca.nome AS candidato_nome, cc.cargo, ch.nome AS chapa_nome
+            FROM candidatos ca
+            JOIN escolas e ON ca.escola_id = e.id
+            JOIN chapa_candidatos cc ON ca.id = cc.candidato_id
+            JOIN chapas ch ON cc.chapa_id = ch.id
+            ORDER BY e.id, ch.nome
         ";
-    
+
         $stmt = $this->pdo->query($sql);
         $escolas = [];
-    
+
         while ($row = $stmt->fetch(\PDO::FETCH_ASSOC)) {
             $escolas[$row['escola_nome']][] = [
                 'candidato_nome' => $row['candidato_nome'],
                 'cargo' => $row['cargo'],
-                'chapa' => $row['chapa'],
+                'chapa' => $row['chapa_nome'],
             ];
         }
-    
+
         return $escolas;
     }
 
